@@ -194,26 +194,28 @@ func (s *Server) requestProcessor(responseWriter http.ResponseWriter, request *h
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s entering", method)
 
 	// get host name from request
-	requestedHost, err := shared.GetHost(ctx, request)
+	_, err := shared.GetHost(ctx, request)
 	if err != nil {
 		httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, err.Error())
 		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
 	}
 
 	// Init variables
-	httpStatusCode := http.StatusOK
-	httpStatusMessage := http.StatusText(httpStatusCode)
-	htmlMessage := fmt.Sprintf("From Host: '%s'", requestedHost)
+	//httpStatusCode := http.StatusOK
+	//httpStatusMessage := http.StatusText(httpStatusCode)
+	//htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
 	if shared.IsValidGetRequest(ctx, request) {
 		// success
+		htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
+
 		s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
 		return
 	}
 
 	// Not Valid GET Request
-	httpStatusCode, httpStatusMessage, htmlMessage = s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
+	httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
 	s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
 }
 

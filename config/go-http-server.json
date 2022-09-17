@@ -1,0 +1,24 @@
+{
+    "service": {
+        "gracefulShutdownDelaySeconds": "12s",
+        "http": {
+            "server": {
+                "ipv4address": "0.0.0.0",
+                "port": 8433
+            }
+        }
+    },
+    "metrics": {
+        "http": {
+            "server": {
+                "ipv4address": "0.0.0.0",
+                "port": 8081
+            }
+        },
+        "healthcheckEnabled": true,
+        "pprofEnabled": true
+    },
+    "logging": {
+        "level": "debug"
+    }
+}

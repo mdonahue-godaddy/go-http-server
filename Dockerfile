@@ -1,6 +1,6 @@
 FROM golang:alpine AS builder
 
-# Set necessary environmet variables needed for our image
+# Set necessary environmet variables needed for go build
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
@@ -10,25 +10,36 @@ ENV GO111MODULE=on \
 WORKDIR /build
 
 # Copy the code into the container
-COPY ./cmd .
-COPY ./pkg .
+COPY ./cmd/go-http-server/main.go ./cmd/go-http-server/main.go
+COPY ./pkg/ ./pkg/
+COPY ./go.mod .
+COPY ./go.sum .
 
 # Build the application
 RUN go build -o go-http-server ./cmd/go-http-server/main.go
 
-# Move to /dist directory as the place for resulting binary folder
+# Move to /dist directory as the place for files for final container
 WORKDIR /dist
 
-# Copy binary from build to main folder
-RUN cp /build/go-http-server .
-COPY .config/go-http-server.json .
+# Copy binary from build to /dist folder
+RUN cp /build/go-http-server ./go-http-server
 
-EXPOSE 8081
-EXPOSE 8082
+# Copy app config json from src to /dist folder
+COPY ./config/go-http-server.json ./go-http-server.json
 
 # Build image
 FROM alpine:latest
 
-COPY --from=builder /dist/go-http-server* /
+#EXPOSE 8081
+#EXPOSE 8082
 
-ENTRYPOINT ["/go-http-server"]
+# Make app directory
+RUN mkdir --verbose --parents /opt/go-http-server
+
+# Move to /opt/go-http-server directory
+WORKDIR /opt/go-http-server
+
+# Copy files from builder /dist to WORKDIR  /opt/go-http-server
+COPY --from=builder /dist/ .
+
+ENTRYPOINT ["/opt/go-http-server/go-http-server"]

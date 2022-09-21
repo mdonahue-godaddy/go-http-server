@@ -200,23 +200,29 @@ func (s *Server) requestProcessor(responseWriter http.ResponseWriter, request *h
 		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
 	}
 
-	// Init variables
-	//httpStatusCode := http.StatusOK
-	//httpStatusMessage := http.StatusText(httpStatusCode)
-	//htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
+	htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
-	if shared.IsValidGetRequest(ctx, request) {
-		// success
+	s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
+
+	/*
+		// Init variables
+		httpStatusCode := http.StatusOK
+		httpStatusMessage := http.StatusText(httpStatusCode)
 		htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
-		s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
+		if shared.IsValidGetRequest(ctx, request) {
+			// success
+			htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
-		return
-	}
+			s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
-	// Not Valid GET Request
-	httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
-	s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
+			return
+		}
+
+		// Not Valid GET Request
+		httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
+		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
+	*/
 }
 
 // Init - setup server

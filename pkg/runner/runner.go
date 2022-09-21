@@ -76,7 +76,7 @@ func Run(version, date, commit string) {
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s starting...", method)
 	//log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false, shared.KeyProcessConfigEnv, GetAllEnvironmentVariables())).Infof("%s Environment Variables", method)
 
-	jsonFileName := fmt.Sprintf("./config/%s.json", ServiceName)
+	jsonFileName := fmt.Sprintf("%s.json", ServiceName)
 	cfg, jerr := config.LoadSettings(jsonFileName)
 	if jerr != nil {
 		//To Do

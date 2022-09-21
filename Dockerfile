@@ -25,7 +25,7 @@ WORKDIR /dist
 RUN cp /build/go-http-server ./go-http-server
 
 # Copy app config json from src to /dist folder
-COPY ./config/go-http-server.json ./go-http-server.json
+COPY ./go-http-server.json ./go-http-server.json
 
 # Build image
 FROM alpine:latest

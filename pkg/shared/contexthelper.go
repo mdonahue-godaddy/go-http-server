@@ -243,20 +243,20 @@ func GetKeyFromContext(ctx context.Context, key string) (*string, error) {
 	values := ctx.Value(ValuesKey)
 
 	if values == nil {
-		return nil, errors.New("Missing ValuesKey")
+		return nil, errors.New("missing ValuesKey")
 	}
 
 	ivalue := values.(Values).Get(key)
 
 	if ivalue == nil {
-		return nil, errors.New("Key not found")
+		return nil, errors.New("key not found")
 	}
 
 	switch value := ivalue.(type) {
 	case string:
 		return &value, nil
 	default:
-		return nil, errors.New("Value not string")
+		return nil, errors.New("value not string")
 	}
 }
 

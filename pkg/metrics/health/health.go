@@ -22,14 +22,14 @@ type Status struct {
 
 type HealthEndpoints struct {
 	ServeMux *http.ServeMux
-	Base     string
+	BasePath string
 	Status   Status
 }
 
-func NewHealthEndpoints(mux *http.ServeMux, base string) *HealthEndpoints {
+func NewHealthEndpoints(mux *http.ServeMux, basePath string) *HealthEndpoints {
 	endpoint := HealthEndpoints{
 		ServeMux: mux,
-		Base:     base,
+		BasePath: basePath,
 		Status: Status{
 			IsGood: false,
 			Reason: "Status now set yet.",
@@ -46,8 +46,8 @@ func (s *HealthEndpoints) SetStatus(isGood bool, reason string) {
 
 // EnableEndpoints - add liveness and readiness handlers
 func (s *HealthEndpoints) EnableEndpoints() {
-	s.ServeMux.HandleFunc(fmt.Sprintf("%s/liveness", s.Base), s.LivenessHandler)
-	s.ServeMux.HandleFunc(fmt.Sprintf("%s/readiness", s.Base), s.ReadinessHandler)
+	s.ServeMux.HandleFunc(fmt.Sprintf("%s/liveness", s.BasePath), s.LivenessHandler)
+	s.ServeMux.HandleFunc(fmt.Sprintf("%s/readiness", s.BasePath), s.ReadinessHandler)
 }
 
 // LivenessHandler - liveness handler, service is alive

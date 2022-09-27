@@ -1,4 +1,4 @@
-package shared
+package shared_test
 
 import (
 	"testing"
@@ -6,13 +6,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
 )
 
 func Test_UTCFormatter(t *testing.T) {
 	assert := assert.New(t)
 
 	jsonFormatter := log.JSONFormatter{
-		TimestampFormat: TimestampFormat,
+		TimestampFormat: shared.TimestampFormat,
 		FieldMap: log.FieldMap{
 			log.FieldKeyTime:  "@timestamp",
 			log.FieldKeyLevel: "level",
@@ -20,7 +22,7 @@ func Test_UTCFormatter(t *testing.T) {
 			log.FieldKeyFunc:  "caller",
 		},
 	}
-	fmtr := UTCFormatter{
+	fmtr := shared.UTCFormatter{
 		&jsonFormatter,
 	}
 

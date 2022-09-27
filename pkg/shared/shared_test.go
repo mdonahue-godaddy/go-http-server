@@ -1,4 +1,4 @@
-package shared
+package shared_test
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
 )
 
 func createTestRequest(method, host, url, remoteAddr, headerKey, headerValue string) *http.Request {
@@ -67,7 +69,7 @@ func Test_Splitter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := Splitter(tc.Rune)
+		actual := shared.Splitter(tc.Rune)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -105,7 +107,7 @@ func Test_GetSafeString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := GetSafeString(tc.Value, tc.DefaultValue)
+		actual := shared.GetSafeString(tc.Value, tc.DefaultValue)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -147,7 +149,7 @@ func Test_GetSafeInt32AsString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := GetSafeInt32AsString(tc.Value, tc.DefaultValue)
+		actual := shared.GetSafeInt32AsString(tc.Value, tc.DefaultValue)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -189,7 +191,7 @@ func Test_GetSafeInt64AsString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := GetSafeInt64AsString(tc.Value, tc.DefaultValue)
+		actual := shared.GetSafeInt64AsString(tc.Value, tc.DefaultValue)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -197,7 +199,7 @@ func Test_GetSafeInt64AsString(t *testing.T) {
 func Test_AddUniversalHeaders(t *testing.T) {
 	assert := assert.New(t)
 
-	ctx := CreateContext(context.Background(), "Test_LoadHTMLFile_ActionName", "Test_LoadHTMLFile_ActionType")
+	ctx := shared.CreateContext(context.Background(), "Test_LoadHTMLFile_ActionName", "Test_LoadHTMLFile_ActionType")
 	serviceName := "MyTestServiceName"
 	nodename, _ := os.Hostname()
 
@@ -228,13 +230,13 @@ func Test_AddUniversalHeaders(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		AddUniversalHeaders(tc.Context, tc.ResponseWriter, tc.ServiceName)
-		assert.Equal(tc.ResponseWriter.Header().Get(HttpHeader_Server), nodename, tc.Description)
-		value, _ := GetKeyFromContext(tc.Context, KeyTransactionID)
+		shared.AddUniversalHeaders(tc.Context, tc.ResponseWriter, tc.ServiceName)
+		assert.Equal(tc.ResponseWriter.Header().Get(shared.HttpHeader_Server), nodename, tc.Description)
+		value, _ := shared.GetKeyFromContext(tc.Context, shared.KeyTransactionID)
 		if value != nil {
-			assert.Equal(tc.ResponseWriter.Header().Get(HttpHeader_XRequestID), *value, tc.Description)
+			assert.Equal(tc.ResponseWriter.Header().Get(shared.HttpHeader_XRequestID), *value, tc.Description)
 		} else {
-			assert.Equal(tc.ResponseWriter.Header().Get(HttpHeader_XRequestID), "", tc.Description)
+			assert.Equal(tc.ResponseWriter.Header().Get(shared.HttpHeader_XRequestID), "", tc.Description)
 		}
 	}
 }
@@ -271,8 +273,8 @@ func Test_WriteHTML(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
-		actual := WriteHTML(ctx, tc.ResponseWriter, tc.Html)
+		ctx := shared.CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
+		actual := shared.WriteHTML(ctx, tc.ResponseWriter, tc.Html)
 
 		if tc.ExpectedError == nil {
 			assert.Nil(actual, tc.Description)
@@ -328,8 +330,8 @@ func Test_GetHost(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
-		actual, err := GetHost(ctx, tc.Request)
+		ctx := shared.CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
+		actual, err := shared.GetHost(ctx, tc.Request)
 		if tc.ExpectedError == nil {
 			assert.Nil(err, tc.Description)
 		} else {
@@ -378,8 +380,8 @@ func Test_IsValidGetRequest(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
-		actual := IsValidGetRequest(ctx, tc.Request)
+		ctx := shared.CreateContext(context.Background(), "Test_IsValidRequest_ActionName", "Test_IsValidRequest_ActionType")
+		actual := shared.IsValidGetRequest(ctx, tc.Request)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -428,8 +430,8 @@ func Test_IsValidRequestHost(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_IsValidRequestHost_ActionName", "Test_IsValidRequestHost_ActionType")
-		actual := IsValidRequestHost(ctx, tc.Request)
+		ctx := shared.CreateContext(context.Background(), "Test_IsValidRequestHost_ActionName", "Test_IsValidRequestHost_ActionType")
+		actual := shared.IsValidRequestHost(ctx, tc.Request)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -460,8 +462,8 @@ func Test_IsValidHost(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_IsValidHost_ActionName", "Test_IsValidHost_ActionType")
-		actual := IsValidHost(ctx, tc.Host)
+		ctx := shared.CreateContext(context.Background(), "Test_IsValidHost_ActionName", "Test_IsValidHost_ActionType")
+		actual := shared.IsValidHost(ctx, tc.Host)
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}
 }
@@ -498,8 +500,8 @@ func Test_LoadHTMLFile(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		ctx := CreateContext(context.Background(), "Test_LoadHTMLFile_ActionName", "Test_LoadHTMLFile_ActionType")
-		actual := LoadHTMLFile(ctx, tc.FileName, tc.DefaultHTML)
+		ctx := shared.CreateContext(context.Background(), "Test_LoadHTMLFile_ActionName", "Test_LoadHTMLFile_ActionType")
+		actual := shared.LoadHTMLFile(ctx, tc.FileName, tc.DefaultHTML)
 		assert.Equal(tc.ExpectedHTML, actual, tc.Description)
 	}
 }

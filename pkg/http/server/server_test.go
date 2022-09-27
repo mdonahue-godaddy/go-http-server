@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
+	"github.com/mdonahue-godaddy/go-http-server/pkg/http/server"
 	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
 )
 
@@ -42,21 +43,21 @@ func Test_NewServer(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := NewServer(tc.ServiceName, tc.Cfg)
+		actual := server.NewServer(tc.ServiceName, tc.Cfg, nil)
 
-		assert.Equal(tc.Cfg, actual.config, tc.Description)
-		assert.Equal(tc.ServiceName, actual.serviceName, tc.Description)
-		assert.Equal(false, actual.isInitialized, tc.Description)
-		assert.Equal(false, actual.isShuttingDown, tc.Description)
+		assert.Equal(tc.Cfg, actual.GetConfig(), tc.Description)
+		assert.Equal(tc.ServiceName, actual.GetServiceName(), tc.Description)
+		assert.Equal(false, actual.IsInitialized(), tc.Description)
+		assert.Equal(false, actual.IsShuttingDown(), tc.Description)
 	}
 }
 
 func Test_generateHtmlBodyFromTemplate(t *testing.T) {
 	assert := assert.New(t)
 
-	svc := &Server{
-		responseTemplateFile: defaultResponseTemplateFile,
-	}
+	cfg := &config.Settings{}
+	template := "<!DOCTYPE HTML><html lang='en-us'><head><title>** {{page_title}} **</title></head><body>{{page_body}}</body></html>"
+	svc := server.NewServer("TestServiceName", cfg, &template)
 
 	testCases := []struct {
 		PageTitle   string
@@ -91,7 +92,7 @@ func Test_generateHtmlBodyFromTemplate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		actual := svc.generateHtmlBodyFromTemplate(tc.PageTitle, tc.PageBody)
+		actual := svc.GenerateHtmlBodyFromTemplate(tc.PageTitle, tc.PageBody)
 
 		assert.Equal(tc.Expected, actual, tc.Description)
 	}

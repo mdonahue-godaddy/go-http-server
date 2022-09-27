@@ -1,10 +1,12 @@
-package config
+package config_test
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
 )
 
 const (
@@ -14,7 +16,7 @@ const (
 func Test_LoadSettings_Good(t *testing.T) {
 	settingsFileName := filepath.Join(testsDir, "good.json")
 
-	actual, err := LoadSettings(settingsFileName)
+	actual, err := config.LoadSettings(settingsFileName)
 
 	assert.Nil(t, err, "Error should be nil.")
 	assert.NotNil(t, actual, "Settings should NOT be nil.")
@@ -31,7 +33,7 @@ func Test_LoadSettings_Good(t *testing.T) {
 func Test_LoadSettings_Empty(t *testing.T) {
 	settingsFileName := filepath.Join(testsDir, "empty.json")
 
-	actual, err := LoadSettings(settingsFileName)
+	actual, err := config.LoadSettings(settingsFileName)
 
 	assert.Nil(t, err, "Error should be nil.")
 	assert.NotNil(t, actual, "Settings should NOT be nil.")
@@ -48,7 +50,7 @@ func Test_LoadSettings_Empty(t *testing.T) {
 func Test_LoadSettings_BadFile(t *testing.T) {
 	settingsFileName := filepath.Join(testsDir, "bad.json")
 
-	actual, err := LoadSettings(settingsFileName)
+	actual, err := config.LoadSettings(settingsFileName)
 
 	assert.NotNil(t, err, "Error should NOT be nil.")
 	assert.Nil(t, actual, "Settings should be nil.")
@@ -58,7 +60,7 @@ func Test_LoadSettings_BadFile(t *testing.T) {
 func Test_LoadSettings_MissingFile(t *testing.T) {
 	settingsFileName := filepath.Join(testsDir, "i.do.not.exist.jsaon")
 
-	actual, err := LoadSettings(settingsFileName)
+	actual, err := config.LoadSettings(settingsFileName)
 
 	assert.NotNil(t, err, "Error should NOT be nil.")
 	assert.Nil(t, actual, "Settings should be nil.")

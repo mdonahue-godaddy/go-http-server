@@ -22,12 +22,6 @@ const (
 	DefaultResponseTemplateFile string = "<!DOCTYPE HTML><html lang='en-us'><head><title>** {{page_title}} **</title></head><body>{{page_body}}</body></html>"
 )
 
-// ForwardingHTTPResponse struct
-type ForwardingHTTPResponse struct {
-	RequestedHost string
-	Error         error
-}
-
 // Server struct
 type Server struct {
 	serviceName          string
@@ -101,11 +95,6 @@ func (s *Server) DoErrorResponse(ctx context.Context, responseWriter http.Respon
 
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeError, false, shared.KeyHTTPResponseStatusCode, httpStatusCode, shared.KeyHTTPResponseBodyContent, htmlMessage)).Errorf("%s returning error response. %s", method, msg)
 
-	if request.Method == "HEAD" { // head request responses shouldn't return a body
-		s.DoHeadErrorResponse(ctx, responseWriter, request, httpStatusCode, msg)
-		return
-	}
-
 	s.WriteHeader(ctx, responseWriter, httpStatusCode)
 
 	if len(htmlMessage) > 0 {
@@ -137,7 +126,7 @@ func (s *Server) WriteHeader(ctx context.Context, responseWriter http.ResponseWr
 	method := "server.writeHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d", method, httpStatusCode)
 
-	s.metrics.IncrementHTTPStatusCounters(httpStatusCode)
+	s.metrics.IncHTTPStatusCounters(httpStatusCode)
 
 	responseWriter.WriteHeader(httpStatusCode)
 }
@@ -172,25 +161,37 @@ func (s *Server) CreateResponseDetails(httpStatusCode int, reason string) (int, 
 
 // livenessRequestProcessor - liveness processor - is the service alive
 func (s *Server) LivenessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.livenessRequestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s entering", method)
 
-	s.WriteHealthCheckResponse(ctx, responseWriter, http.StatusOK, "Liveness")
+	responseStatus := http.StatusOK
+	responseMessage := "Liveness"
+
+	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
+
+	s.metrics.IncLivenessRequestTimer(start)
 }
 
 // readinessRequestProcessor - readiness processor
 func (s *Server) ReadinessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.readinessRequestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s entering", method)
 
+	responseStatus := http.StatusOK
+	responseMessage := "Readiness"
+
 	if s.isShuttingDown {
-		s.WriteHealthCheckResponse(ctx, responseWriter, http.StatusServiceUnavailable, "Server is shutting down.")
-		return
+		responseStatus = http.StatusServiceUnavailable
+		responseMessage = "Server is shutting down."
 	}
 
-	s.WriteHealthCheckResponse(ctx, responseWriter, http.StatusOK, "Readiness")
+	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
+
+	s.metrics.IncReadinessRequestTimer(start)
 }
 
 func (s *Server) WriteHealthCheckResponse(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int, message string) {
@@ -216,24 +217,31 @@ func (s *Server) WriteHealthCheckResponse(ctx context.Context, responseWriter ht
 
 // requestProcessor main server func
 func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.requestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s entering", method)
 
-	// TODO: s.metrics.ServiceRequestResponseTimer.
+	if request.Method == "HEAD" { // head request responses shouldn't return a body
+		s.DoHeadErrorResponse(ctx, responseWriter, request, http.StatusBadRequest, "Verb: HEAD - not supported")
+		s.metrics.IncServiceRequestTimer(start)
+		return
+	}
 
 	// get host name from request
 	_, err := shared.GetHost(ctx, request)
 	if err != nil {
 		httpStatusCode, httpStatusMessage, htmlMessage := s.CreateResponseDetails(http.StatusBadRequest, err.Error())
 		s.DoErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
+		s.metrics.IncServiceRequestTimer(start)
+		return
 	}
 
 	htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
 	s.DoValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
-	// TODO: s.metrics.ServiceRequestResponseTimer.
+	s.metrics.IncServiceRequestTimer(start)
 }
 
 // Init - setup server
@@ -269,6 +277,7 @@ func (s *Server) Run() {
 	s.router.HandleFunc("/livenessZ76", s.LivenessRequestProcessor)
 	s.router.HandleFunc("/readinessZ67", s.ReadinessRequestProcessor)
 	s.router.HandleFunc("/", s.RequestProcessor)
+	s.router.Handle("/debug/gometrics", s.metrics.ExpHandler)
 
 	log.WithFields(shared.GetFields(s.context, shared.EventTypeInfo, false, shared.KeyServerAddress, s.config.Service.HTTP.Server.IPv4Address)).Infof("%s server address", method)
 

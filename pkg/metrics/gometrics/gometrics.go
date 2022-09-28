@@ -105,41 +105,43 @@ func (m *GoMetrics) IncrementHTTPStatusCounters(httpStatusCode int) {
 	// Translate Status Code to counter(s)
 	switch {
 	case httpStatusCode >= 100 && httpStatusCode < 200:
-		m.HTTPStatus1xx.Inc(1)
+		(*m.HTTPStatus1xx).Inc(1)
 	case httpStatusCode >= 200 && httpStatusCode < 300:
-		m.HTTPStatus2xx.Inc(1)
+		(*m.HTTPStatus2xx).Inc(1)
 	case httpStatusCode >= 300 && httpStatusCode < 400:
-		m.HTTPStatus3xx.Inc(1)
+		(*m.HTTPStatus3xx).Inc(1)
 	case httpStatusCode == 400:
-		m.HTTPStatus4xx.Inc(1)
-		m.HTTPStatus400.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
+		(*m.HTTPStatus400).Inc(1)
 	case httpStatusCode == 401:
-		m.HTTPStatus4xx.Inc(1)
-		m.HTTPStatus401.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
+		(*m.HTTPStatus401).Inc(1)
 	case httpStatusCode == 402:
-		m.HTTPStatus4xx.Inc(1)
-		m.HTTPStatus402.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
+		(*m.HTTPStatus402).Inc(1)
 	case httpStatusCode == 403:
-		m.HTTPStatus4xx.Inc(1)
-		m.HTTPStatus403.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
+		(*m.HTTPStatus403).Inc(1)
 	case httpStatusCode == 404:
-		m.HTTPStatus4xx.Inc(1)
-		m.HTTPStatus404.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
+		(*m.HTTPStatus404).Inc(1)
 	case httpStatusCode > 404 && httpStatusCode < 500:
-		m.HTTPStatus4xx.Inc(1)
+		(*m.HTTPStatus4xx).Inc(1)
 	case httpStatusCode == 500:
-		m.HTTPStatus5xx.Inc(1)
-		m.HTTPStatus500.Inc(1)
+		(*m.HTTPStatus5xx).Inc(1)
+		(*m.HTTPStatus500).Inc(1)
 	case httpStatusCode == 501:
-		m.HTTPStatus5xx.Inc(1)
-		m.HTTPStatus501.Inc(1)
+		(*m.HTTPStatus5xx).Inc(1)
+		(*m.HTTPStatus501).Inc(1)
 	case httpStatusCode == 502:
-		m.HTTPStatus5xx.Inc(1)
-		m.HTTPStatus502.Inc(1)
+		(*m.HTTPStatus5xx).Inc(1)
+		(*m.HTTPStatus502).Inc(1)
 	case httpStatusCode == 503:
-		m.HTTPStatus5xx.Inc(1)
-		m.HTTPStatus503.Inc(1)
+		(*m.HTTPStatus5xx).Inc(1)
+		(*m.HTTPStatus503).Inc(1)
 	case httpStatusCode > 503 && httpStatusCode < 600:
-		m.HTTPStatus5xx.Inc(1)
+		(*m.HTTPStatus5xx).Inc(1)
+	default:
+		// ToDo: Log missed status.
 	}
 }

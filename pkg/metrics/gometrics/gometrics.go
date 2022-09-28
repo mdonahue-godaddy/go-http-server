@@ -32,24 +32,24 @@ type MetricLogger interface {
 }
 
 type GoMetrics struct {
-	ServiceRequestResponseTimer     metrics.Timer
-	HealthCheckRequestResponseTimer metrics.Timer
-	DBGetTimer                      metrics.Timer
-	DBPutTimer                      metrics.Timer
-	HTTPStatus1xx                   metrics.Counter
-	HTTPStatus2xx                   metrics.Counter
-	HTTPStatus3xx                   metrics.Counter
-	HTTPStatus4xx                   metrics.Counter
-	HTTPStatus400                   metrics.Counter
-	HTTPStatus401                   metrics.Counter
-	HTTPStatus402                   metrics.Counter
-	HTTPStatus403                   metrics.Counter
-	HTTPStatus404                   metrics.Counter
-	HTTPStatus5xx                   metrics.Counter
-	HTTPStatus500                   metrics.Counter
-	HTTPStatus501                   metrics.Counter
-	HTTPStatus502                   metrics.Counter
-	HTTPStatus503                   metrics.Counter
+	ServiceRequestTimer     *metrics.Timer
+	HealthCheckRequestTimer *metrics.Timer
+	DBGetTimer              *metrics.Timer
+	DBPutTimer              *metrics.Timer
+	HTTPStatus1xx           *metrics.Counter
+	HTTPStatus2xx           *metrics.Counter
+	HTTPStatus3xx           *metrics.Counter
+	HTTPStatus4xx           *metrics.Counter
+	HTTPStatus400           *metrics.Counter
+	HTTPStatus401           *metrics.Counter
+	HTTPStatus402           *metrics.Counter
+	HTTPStatus403           *metrics.Counter
+	HTTPStatus404           *metrics.Counter
+	HTTPStatus5xx           *metrics.Counter
+	HTTPStatus500           *metrics.Counter
+	HTTPStatus501           *metrics.Counter
+	HTTPStatus502           *metrics.Counter
+	HTTPStatus503           *metrics.Counter
 }
 
 func AddPrometheusClientRegistry(metricsRegistry metrics.Registry, nameSpace string, serviceName string) {
@@ -65,9 +65,40 @@ func StartPrometheusMetricsEndpoint(mux *http.ServeMux) {
 }
 
 func NewGoMetrics() *GoMetrics {
-	metrics := GoMetrics{}
+	metrics := GoMetrics{
+		ServiceRequestTimer:     CreateandRegisterTimer("ServiceRequestTimer"),
+		HealthCheckRequestTimer: CreateandRegisterTimer("HealthCheckRequestTimer"),
+		DBGetTimer:              CreateandRegisterTimer("DBGetTimer"),
+		DBPutTimer:              CreateandRegisterTimer("DBPutTimer"),
+		HTTPStatus1xx:           CreateAndRegisterCounter("HTTPStatus1xx"),
+		HTTPStatus2xx:           CreateAndRegisterCounter("HTTPStatus2xx"),
+		HTTPStatus3xx:           CreateAndRegisterCounter("HTTPStatus3xx"),
+		HTTPStatus4xx:           CreateAndRegisterCounter("HTTPStatus4xx"),
+		HTTPStatus400:           CreateAndRegisterCounter("HTTPStatus400"),
+		HTTPStatus401:           CreateAndRegisterCounter("HTTPStatus401"),
+		HTTPStatus402:           CreateAndRegisterCounter("HTTPStatus402"),
+		HTTPStatus403:           CreateAndRegisterCounter("HTTPStatus403"),
+		HTTPStatus404:           CreateAndRegisterCounter("HTTPStatus404"),
+		HTTPStatus5xx:           CreateAndRegisterCounter("HTTPStatus5xx"),
+		HTTPStatus500:           CreateAndRegisterCounter("HTTPStatus500"),
+		HTTPStatus501:           CreateAndRegisterCounter("HTTPStatus501"),
+		HTTPStatus502:           CreateAndRegisterCounter("HTTPStatus502"),
+		HTTPStatus503:           CreateAndRegisterCounter("HTTPStatus503"),
+	}
 
 	return &metrics
+}
+
+func CreateAndRegisterCounter(name string) *metrics.Counter {
+	ctr := metrics.NewCounter()
+	metrics.Register(name, ctr)
+	return &ctr
+}
+
+func CreateandRegisterTimer(name string) *metrics.Timer {
+	tmr := metrics.NewTimer()
+	metrics.Register(name, tmr)
+	return &tmr
 }
 
 func (m *GoMetrics) IncrementHTTPStatusCounters(httpStatusCode int) {

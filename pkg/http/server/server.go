@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
+	"github.com/mdonahue-godaddy/go-http-server/pkg/metrics/gometrics"
 	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
 )
 
@@ -36,12 +37,13 @@ type Server struct {
 	context              context.Context
 	router               *http.ServeMux
 	server               *http.Server
+	metrics              *gometrics.GoMetrics
 	responseTemplateFile string
 }
 
 // NewServer - create new instance of server
 func NewServer(serviceName string, cfg *config.Settings, template *string) *Server {
-	server := new(Server)
+	server := Server{}
 
 	server.serviceName = serviceName
 	server.config = cfg
@@ -52,7 +54,9 @@ func NewServer(serviceName string, cfg *config.Settings, template *string) *Serv
 		server.responseTemplateFile = DefaultResponseTemplateFile
 	}
 
-	return server
+	server.metrics = gometrics.NewGoMetrics()
+
+	return &server
 }
 
 func (s *Server) GetConfig() *config.Settings {
@@ -132,6 +136,8 @@ func (s *Server) DoValidRequestResponse(ctx context.Context, responseWriter http
 func (s *Server) WriteHeader(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int) {
 	method := "server.writeHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d", method, httpStatusCode)
+
+	s.metrics.IncrementHTTPStatusCounters(httpStatusCode)
 
 	responseWriter.WriteHeader(httpStatusCode)
 }
@@ -214,6 +220,8 @@ func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *h
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s entering", method)
 
+	// TODO: s.metrics.ServiceRequestResponseTimer.
+
 	// get host name from request
 	_, err := shared.GetHost(ctx, request)
 	if err != nil {
@@ -225,25 +233,7 @@ func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *h
 
 	s.DoValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
-	/*
-		// Init variables
-		httpStatusCode := http.StatusOK
-		httpStatusMessage := http.StatusText(httpStatusCode)
-		htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
-
-		if shared.IsValidGetRequest(ctx, request) {
-			// success
-			htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
-
-			s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
-
-			return
-		}
-
-		// Not Valid GET Request
-		httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
-		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
-	*/
+	// TODO: s.metrics.ServiceRequestResponseTimer.
 }
 
 // Init - setup server

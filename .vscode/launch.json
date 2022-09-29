@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/cmd/go-http-server/main.go",
+            "program": "${workspaceFolder}/cmd/main.go",
             "cwd": "${workspaceFolder}",
             "env": {},
             "args": [],

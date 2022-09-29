@@ -168,4 +168,8 @@ func Test_NewGoMetrics(t *testing.T) {
 	assert.Equal(t, int64(1), gm.TrackedMetrics.HTTPStatus503.Count())
 	gm.IncHTTPStatusCounters(ctx, 503)
 	assert.Equal(t, int64(2), gm.TrackedMetrics.HTTPStatus503.Count())
+
+	//gm.IncHTTPStatusCounters(ctx, 0)
+
+	//gm.IncHTTPStatusCounters(ctx, 600)
 }

@@ -31,7 +31,7 @@ type Server struct {
 	context              context.Context
 	router               *http.ServeMux
 	server               *http.Server
-	metrics              *gometrics.GoMetrics
+	metrics              gometrics.IGoMetrics
 	responseTemplateFile string
 }
 
@@ -277,7 +277,9 @@ func (s *Server) Run() {
 	s.router.HandleFunc("/healthz/livenessZ76", s.LivenessRequestProcessor)
 	s.router.HandleFunc("/healthz/readinessZ67", s.ReadinessRequestProcessor)
 	s.router.HandleFunc("/", s.RequestProcessor)
-	s.router.Handle("/debug/gometrics", s.metrics.ExpHandler)
+	if met, ok := s.metrics.(*gometrics.GoMetrics); ok {
+		s.router.Handle("/debug/gometrics", met.ExpHandler)
+	}
 
 	log.WithFields(shared.GetFields(s.context, shared.EventTypeInfo, false, shared.KeyServerAddress, s.config.Service.HTTP.Server.IPv4Address)).Infof("%s server address", method)
 

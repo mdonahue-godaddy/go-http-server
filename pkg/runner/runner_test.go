@@ -1,4 +1,4 @@
-package runner
+package runner_test
 
 import (
 	"os"
@@ -7,6 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mdonahue-godaddy/go-http-server/pkg/runner"
 )
 
 func RestoreEnvironment(pairs []string) {
@@ -47,7 +49,7 @@ func Test_GetAllEnvironmentVariables(t *testing.T) {
 		os.Setenv("FARGATE_CLUSTER", tc.FargateCluster)
 		os.Setenv("FARGATE_SERVICE", tc.FargateService)
 
-		actual := GetAllEnvironmentVariables()
+		actual := runner.GetAllEnvironmentVariables()
 
 		assert.NotEmpty(actual, tc.Description)
 		assert.Len(actual, 2, tc.Description)
@@ -64,7 +66,7 @@ func Test_GetAllEnvironmentVariables(t *testing.T) {
 func Test_SetupDefaultLogrusConfig(t *testing.T) {
 	assert := assert.New(t)
 
-	SetupDefaultLogrusConfig()
+	runner.SetupDefaultLogrusConfig()
 
 	level := log.GetLevel()
 

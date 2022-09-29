@@ -14,18 +14,13 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
+	"github.com/mdonahue-godaddy/go-http-server/pkg/metrics/gometrics"
 	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
 )
 
 const (
-	defaultResponseTemplateFile string = "<!DOCTYPE HTML><html lang='en-us'><head><title>** {{page_title}} **</title></head><body>{{page_body}}</body></html>"
+	DefaultResponseTemplateFile string = "<!DOCTYPE HTML><html lang='en-us'><head><title>** {{page_title}} **</title></head><body>{{page_body}}</body></html>"
 )
-
-// ForwardingHTTPResponse struct
-type ForwardingHTTPResponse struct {
-	RequestedHost string
-	Error         error
-}
 
 // Server struct
 type Server struct {
@@ -36,22 +31,46 @@ type Server struct {
 	context              context.Context
 	router               *http.ServeMux
 	server               *http.Server
+	metrics              *gometrics.GoMetrics
 	responseTemplateFile string
 }
 
 // NewServer - create new instance of server
-func NewServer(serviceName string, cfg *config.Settings) *Server {
-	server := new(Server)
+func NewServer(serviceName string, cfg *config.Settings, template *string) *Server {
+	server := Server{}
 
 	server.serviceName = serviceName
 	server.config = cfg
-	server.responseTemplateFile = defaultResponseTemplateFile
 
-	return server
+	if template != nil && len(*template) > 0 {
+		server.responseTemplateFile = *template
+	} else {
+		server.responseTemplateFile = DefaultResponseTemplateFile
+	}
+
+	server.metrics = gometrics.NewGoMetrics()
+
+	return &server
+}
+
+func (s *Server) GetConfig() *config.Settings {
+	return s.config
+}
+
+func (s *Server) GetServiceName() string {
+	return s.serviceName
+}
+
+func (s *Server) IsInitialized() bool {
+	return s.isInitialized
+}
+
+func (s *Server) IsShuttingDown() bool {
+	return s.isShuttingDown
 }
 
 // doHeadErrorResponse - WARNING HEAD requests should not return a body so normal error response can't be used.
-func (s *Server) doHeadErrorResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, httpStatusCode int, message string) {
+func (s *Server) DoHeadErrorResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, httpStatusCode int, message string) {
 	method := "server.doHeadRequestErrorResponse"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false, shared.KeyHTTPResponseStatusCode, httpStatusCode)).Debugf("%s entering", method)
 
@@ -59,11 +78,11 @@ func (s *Server) doHeadErrorResponse(ctx context.Context, responseWriter http.Re
 	responseWriter.Header().Add("Content-Length", "0")
 	responseWriter.Header().Add("Content-Type", shared.ContentType_TextHtml)
 
-	s.writeHeader(ctx, responseWriter, httpStatusCode)
+	s.WriteHeader(ctx, responseWriter, httpStatusCode)
 }
 
 // doErrorResponse - Error response processor
-func (s *Server) doErrorResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, httpStatusCode int, htmlMessage string, err error) {
+func (s *Server) DoErrorResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, httpStatusCode int, htmlMessage string, err error) {
 	method := "server.doErrorResponse"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false, shared.KeyHTTPResponseStatusCode, httpStatusCode, shared.KeyHTTPResponseBodyContent, htmlMessage)).Debugf("%s entering", method)
 
@@ -76,12 +95,7 @@ func (s *Server) doErrorResponse(ctx context.Context, responseWriter http.Respon
 
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeError, false, shared.KeyHTTPResponseStatusCode, httpStatusCode, shared.KeyHTTPResponseBodyContent, htmlMessage)).Errorf("%s returning error response. %s", method, msg)
 
-	if request.Method == "HEAD" { // head request responses shouldn't return a body
-		s.doHeadErrorResponse(ctx, responseWriter, request, httpStatusCode, msg)
-		return
-	}
-
-	s.writeHeader(ctx, responseWriter, httpStatusCode)
+	s.WriteHeader(ctx, responseWriter, httpStatusCode)
 
 	if len(htmlMessage) > 0 {
 		err := shared.WriteHTML(ctx, responseWriter, htmlMessage)
@@ -91,7 +105,7 @@ func (s *Server) doErrorResponse(ctx context.Context, responseWriter http.Respon
 	}
 }
 
-func (s *Server) doValidRequestResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, responseHTML string) {
+func (s *Server) DoValidRequestResponse(ctx context.Context, responseWriter http.ResponseWriter, request *http.Request, responseHTML string) {
 	method := "server.doValidRequestResponse"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s entering", method)
 
@@ -100,7 +114,7 @@ func (s *Server) doValidRequestResponse(ctx context.Context, responseWriter http
 	// Http Status Code 200
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s Masking", method)
 
-	s.writeHeader(ctx, responseWriter, http.StatusOK)
+	s.WriteHeader(ctx, responseWriter, http.StatusOK)
 
 	err := shared.WriteHTML(ctx, responseWriter, responseHTML)
 	if err != nil {
@@ -108,14 +122,16 @@ func (s *Server) doValidRequestResponse(ctx context.Context, responseWriter http
 	}
 }
 
-func (s *Server) writeHeader(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int) {
+func (s *Server) WriteHeader(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int) {
 	method := "server.writeHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d", method, httpStatusCode)
+
+	s.metrics.IncHTTPStatusCounters(httpStatusCode)
 
 	responseWriter.WriteHeader(httpStatusCode)
 }
 
-func (s *Server) generateHtmlBodyFromTemplate(pageTitle string, pageBody string) string {
+func (s *Server) GenerateHtmlBodyFromTemplate(pageTitle string, pageBody string) string {
 	html := s.responseTemplateFile
 
 	html = strings.Replace(html, "{{page_title}}", pageTitle, -1)
@@ -124,7 +140,7 @@ func (s *Server) generateHtmlBodyFromTemplate(pageTitle string, pageBody string)
 	return html
 }
 
-func (s *Server) createResponseDetails(httpStatusCode int, reason string) (int, string, string) {
+func (s *Server) CreateResponseDetails(httpStatusCode int, reason string) (int, string, string) {
 	httpStatusMessage := http.StatusText(httpStatusCode)
 	htmlMessage := strings.ToLower(httpStatusMessage)
 
@@ -135,38 +151,50 @@ func (s *Server) createResponseDetails(httpStatusCode int, reason string) (int, 
 	}
 
 	if len(strings.TrimSpace(reason)) > 0 {
-		htmlMessage = s.generateHtmlBodyFromTemplate(title, fmt.Sprintf("HTTP Status: %d (%s, %s)", httpStatusCode, htmlMessage, reason))
+		htmlMessage = s.GenerateHtmlBodyFromTemplate(title, fmt.Sprintf("HTTP Status: %d (%s, %s)", httpStatusCode, htmlMessage, reason))
 	} else {
-		htmlMessage = s.generateHtmlBodyFromTemplate(title, fmt.Sprintf("HTTP Status: %d (%s)", httpStatusCode, htmlMessage))
+		htmlMessage = s.GenerateHtmlBodyFromTemplate(title, fmt.Sprintf("HTTP Status: %d (%s)", httpStatusCode, htmlMessage))
 	}
 
 	return httpStatusCode, httpStatusMessage, htmlMessage
 }
 
 // livenessRequestProcessor - liveness processor - is the service alive
-func (s *Server) livenessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+func (s *Server) LivenessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.livenessRequestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s entering", method)
 
-	s.writeHealthCheckResponse(ctx, responseWriter, http.StatusOK, "Liveness")
+	responseStatus := http.StatusOK
+	responseMessage := "Liveness"
+
+	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
+
+	s.metrics.IncLivenessRequestTimer(start)
 }
 
 // readinessRequestProcessor - readiness processor
-func (s *Server) readinessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+func (s *Server) ReadinessRequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.readinessRequestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s entering", method)
 
+	responseStatus := http.StatusOK
+	responseMessage := "Readiness"
+
 	if s.isShuttingDown {
-		s.writeHealthCheckResponse(ctx, responseWriter, http.StatusServiceUnavailable, "Server is shutting down.")
-		return
+		responseStatus = http.StatusServiceUnavailable
+		responseMessage = "Server is shutting down."
 	}
 
-	s.writeHealthCheckResponse(ctx, responseWriter, http.StatusOK, "Readiness")
+	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
+
+	s.metrics.IncReadinessRequestTimer(start)
 }
 
-func (s *Server) writeHealthCheckResponse(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int, message string) {
+func (s *Server) WriteHealthCheckResponse(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int, message string) {
 	method := "server.writeHealthCheckHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d, Message: %s", method, httpStatusCode, message)
 
@@ -177,7 +205,7 @@ func (s *Server) writeHealthCheckResponse(ctx context.Context, responseWriter ht
 
 	responseWriter.WriteHeader(httpStatusCode)
 
-	_, _, htmlMessage := s.createResponseDetails(httpStatusCode, message)
+	_, _, htmlMessage := s.CreateResponseDetails(httpStatusCode, message)
 
 	if len(htmlMessage) > 0 {
 		err = shared.WriteHTML(ctx, responseWriter, htmlMessage)
@@ -188,41 +216,32 @@ func (s *Server) writeHealthCheckResponse(ctx context.Context, responseWriter ht
 }
 
 // requestProcessor main server func
-func (s *Server) requestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *http.Request) {
+	start := time.Now().UTC()
 	method := "server.requestProcessor"
 	ctx := shared.CreateRequestContext(request, method)
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s entering", method)
 
+	if request.Method == "HEAD" { // head request responses shouldn't return a body
+		s.DoHeadErrorResponse(ctx, responseWriter, request, http.StatusBadRequest, "Verb: HEAD - not supported")
+		s.metrics.IncServiceRequestTimer(start)
+		return
+	}
+
 	// get host name from request
 	_, err := shared.GetHost(ctx, request)
 	if err != nil {
-		httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, err.Error())
-		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
+		httpStatusCode, httpStatusMessage, htmlMessage := s.CreateResponseDetails(http.StatusBadRequest, err.Error())
+		s.DoErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
+		s.metrics.IncServiceRequestTimer(start)
+		return
 	}
 
 	htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
 
-	s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
+	s.DoValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
-	/*
-		// Init variables
-		httpStatusCode := http.StatusOK
-		httpStatusMessage := http.StatusText(httpStatusCode)
-		htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
-
-		if shared.IsValidGetRequest(ctx, request) {
-			// success
-			htmlMessage := fmt.Sprintf("Request from '%s' to Host: '%s', URL: '%v'", request.RemoteAddr, request.Host, request.URL)
-
-			s.doValidRequestResponse(ctx, responseWriter, request, htmlMessage)
-
-			return
-		}
-
-		// Not Valid GET Request
-		httpStatusCode, httpStatusMessage, htmlMessage := s.createResponseDetails(http.StatusBadRequest, "Request Not Valid")
-		s.doErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
-	*/
+	s.metrics.IncServiceRequestTimer(start)
 }
 
 // Init - setup server
@@ -244,7 +263,7 @@ func (s *Server) Init() {
 	s.server = nil
 
 	// Load Response Template HTML File
-	s.responseTemplateFile = shared.LoadHTMLFile(s.context, "", defaultResponseTemplateFile)
+	s.responseTemplateFile = shared.LoadHTMLFile(s.context, "", DefaultResponseTemplateFile)
 }
 
 // Run - start server and listen
@@ -255,9 +274,10 @@ func (s *Server) Run() {
 
 	// setup handler
 	s.router = http.NewServeMux()
-	s.router.HandleFunc("/livenessZ76", s.livenessRequestProcessor)
-	s.router.HandleFunc("/readinessZ67", s.readinessRequestProcessor)
-	s.router.HandleFunc("/", s.requestProcessor)
+	s.router.HandleFunc("/healthz/livenessZ76", s.LivenessRequestProcessor)
+	s.router.HandleFunc("/healthz/readinessZ67", s.ReadinessRequestProcessor)
+	s.router.HandleFunc("/", s.RequestProcessor)
+	s.router.Handle("/debug/gometrics", s.metrics.ExpHandler)
 
 	log.WithFields(shared.GetFields(s.context, shared.EventTypeInfo, false, shared.KeyServerAddress, s.config.Service.HTTP.Server.IPv4Address)).Infof("%s server address", method)
 

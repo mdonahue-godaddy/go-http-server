@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -212,7 +211,7 @@ func LoadHTMLFile(ctx context.Context, fileName string, defaultHTML string) stri
 
 	if len(fileName) > 0 {
 		// Read HTTML File
-		buffer, err := ioutil.ReadFile(fileName)
+		buffer, err := os.ReadFile(fileName)
 
 		if err != nil {
 			log.WithFields(GetFields(ctx, EventTypeError, false, "fileName", fileName, KeyErrorMessage, err.Error())).Warnf("%s error loading HTML from file, using hard coded default", method)

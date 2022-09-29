@@ -1,1 +1,1 @@
-package pprof
+package pprof_test

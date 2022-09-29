@@ -79,7 +79,7 @@ func Run(version, date, commit string) {
 	jsonFileName := fmt.Sprintf("%s.json", ServiceName)
 	cfg, jerr := config.LoadSettings(jsonFileName)
 	if jerr != nil {
-		//To Do
+		log.Panic("Error loading settings.", jerr)
 	}
 
 	value, err := shared.Struct2JSONString(cfg)
@@ -100,7 +100,7 @@ func Run(version, date, commit string) {
 
 	// setup forwarding service
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Infof("%s setup forwarding end point", method)
-	server := server.NewServer(ServiceName, cfg)
+	server := server.NewServer(ServiceName, cfg, nil)
 	server.Init()
 
 	exitCode := 1

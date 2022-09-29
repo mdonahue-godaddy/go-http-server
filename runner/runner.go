@@ -63,9 +63,9 @@ func SetupDefaultLogrusConfig() {
 }
 
 // Run - do the work
-func Run(version, date, commit string) {
+func Run() {
 	//nolint
-	method := fmt.Sprintf("runner.Run('%s', '%s', '%s')", version, date, commit)
+	method := "runner.Run()"
 	ctx := shared.CreateContext(context.Background(), ServiceName, shared.ActionTypeService)
 
 	// Setup universal context values

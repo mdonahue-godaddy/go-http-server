@@ -126,7 +126,7 @@ func (s *Server) WriteHeader(ctx context.Context, responseWriter http.ResponseWr
 	method := "server.writeHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d", method, httpStatusCode)
 
-	s.metrics.IncHTTPStatusCounters(httpStatusCode)
+	s.metrics.IncHTTPStatusCounters(ctx, httpStatusCode)
 
 	responseWriter.WriteHeader(httpStatusCode)
 }

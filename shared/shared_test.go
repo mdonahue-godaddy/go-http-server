@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
+	"github.com/mdonahue-godaddy/go-http-server/shared"
 )
 
 func createTestRequest(method, host, url, remoteAddr, headerKey, headerValue string) *http.Request {

@@ -31,3 +31,4 @@ config/out
 .git_tag
 checkstyle-result.xml
 dist/
+tmp/

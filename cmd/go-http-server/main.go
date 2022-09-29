@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/mdonahue-godaddy/go-http-server/pkg/runner"
+	"github.com/mdonahue-godaddy/go-http-server/runner"
 )
 
 var (

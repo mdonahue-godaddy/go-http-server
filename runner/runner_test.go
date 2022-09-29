@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/runner"
+	"github.com/mdonahue-godaddy/go-http-server/runner"
 )
 
 func RestoreEnvironment(pairs []string) {

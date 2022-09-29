@@ -12,10 +12,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/http/server"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/metrics"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
+	"github.com/mdonahue-godaddy/go-http-server/config"
+	"github.com/mdonahue-godaddy/go-http-server/http/server"
+	"github.com/mdonahue-godaddy/go-http-server/metrics"
+	"github.com/mdonahue-godaddy/go-http-server/shared"
 )
 
 const (

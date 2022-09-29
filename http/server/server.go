@@ -13,9 +13,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/metrics/gometrics"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
+	"github.com/mdonahue-godaddy/go-http-server/config"
+	"github.com/mdonahue-godaddy/go-http-server/metrics/gometrics"
+	"github.com/mdonahue-godaddy/go-http-server/shared"
 )
 
 const (

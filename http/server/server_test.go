@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/config"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/http/server"
-	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
+	"github.com/mdonahue-godaddy/go-http-server/config"
+	"github.com/mdonahue-godaddy/go-http-server/http/server"
+	"github.com/mdonahue-godaddy/go-http-server/shared"
 )
 
 // CreateTestContext -

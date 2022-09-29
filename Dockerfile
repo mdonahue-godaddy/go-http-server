@@ -11,7 +11,7 @@ WORKDIR /build
 
 # Copy the code into the container
 COPY ./cmd/go-http-server/main.go ./cmd/go-http-server/main.go
-COPY ./pkg/ ./pkg/
+COPY ./ ./
 COPY ./go.mod .
 COPY ./go.sum .
 

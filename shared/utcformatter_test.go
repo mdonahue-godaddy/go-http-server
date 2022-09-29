@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mdonahue-godaddy/go-http-server/pkg/shared"
+	"github.com/mdonahue-godaddy/go-http-server/shared"
 )
 
 func Test_UTCFormatter(t *testing.T) {

@@ -1,16 +1,35 @@
 package gometrics
 
+//go:generate mockgen -source=gometrics.go -destination=mocks/gometrics_mocks.go -package=mocks
+
 import (
+	"context"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/mdonahue-godaddy/go-http-server/log"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
+	"github.com/rs/zerolog"
 	//prometheusmetrics "github.com/deathowl/go-metrics-prometheus"
 	//"github.com/prometheus/client_golang/prometheus"
 	//"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+type IGoMetrics interface {
+	SetMetricsRegistry(registry metrics.Registry)
+	CreateMetrics()
+	CreateCounter(name string) *metrics.Counter
+	CreateTimer(name string) *metrics.Timer
+	IncServiceRequestTimer(start time.Time)
+	IncLivenessRequestTimer(start time.Time)
+	IncReadinessRequestTimer(start time.Time)
+	IncDBGetTimer(start time.Time)
+	IncDBPutTimer(start time.Time)
+	IncHTTPStatusCounters(ctx context.Context, httpStatusCode int)
+}
 
 type TrackedMetrics struct {
 	ServiceRequestTimer   metrics.Timer
@@ -122,7 +141,7 @@ func (gm *GoMetrics) IncDBPutTimer(start time.Time) {
 	gm.TrackedMetrics.DBPutTimer.Update(duration)
 }
 
-func (gm *GoMetrics) IncHTTPStatusCounters(httpStatusCode int) {
+func (gm *GoMetrics) IncHTTPStatusCounters(ctx context.Context, httpStatusCode int) {
 	// Translate Status Code to counter(s)
 	switch {
 	case httpStatusCode >= 100 && httpStatusCode < 200:
@@ -163,7 +182,12 @@ func (gm *GoMetrics) IncHTTPStatusCounters(httpStatusCode int) {
 	case httpStatusCode > 503 && httpStatusCode < 600:
 		gm.TrackedMetrics.HTTPStatus5xx.Inc(1)
 	default:
-		// ToDo: Log missed status.
+		warning := log.CtxOrDefault(ctx).
+			Warn().
+			Dict("warn", zerolog.Dict().Str("httpStatusCode", strconv.Itoa(httpStatusCode))).
+			ECSEvent(log.Database, log.NotApplicable, log.InformationType)
+
+		warning.Msg("unexpected http status code")
 	}
 }
 

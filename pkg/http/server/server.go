@@ -274,8 +274,8 @@ func (s *Server) Run() {
 
 	// setup handler
 	s.router = http.NewServeMux()
-	s.router.HandleFunc("/livenessZ76", s.LivenessRequestProcessor)
-	s.router.HandleFunc("/readinessZ67", s.ReadinessRequestProcessor)
+	s.router.HandleFunc("/healthz/livenessZ76", s.LivenessRequestProcessor)
+	s.router.HandleFunc("/healthz/readinessZ67", s.ReadinessRequestProcessor)
 	s.router.HandleFunc("/", s.RequestProcessor)
 	s.router.Handle("/debug/gometrics", s.metrics.ExpHandler)
 

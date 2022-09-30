@@ -102,7 +102,6 @@ func (gm *GoMetrics) CreateMetrics() {
 
 func (gm *GoMetrics) CreateCounter(name string) *metrics.Counter {
 	ctr := metrics.GetOrRegisterCounter(name, gm.Registry)
-	metrics.Register(name, ctr)
 	return &ctr
 }
 
@@ -112,33 +111,23 @@ func (gm *GoMetrics) CreateTimer(name string) *metrics.Timer {
 }
 
 func (gm *GoMetrics) IncServiceRequestTimer(start time.Time) {
-	end := time.Now().UTC()
-	duration := end.Sub(start)
-	gm.TrackedMetrics.ServiceRequestTimer.Update(duration)
+	gm.TrackedMetrics.ServiceRequestTimer.Update(time.Since(start))
 }
 
 func (gm *GoMetrics) IncLivenessRequestTimer(start time.Time) {
-	end := time.Now().UTC()
-	duration := end.Sub(start)
-	gm.TrackedMetrics.LivenessRequestTimer.Update(duration)
+	gm.TrackedMetrics.LivenessRequestTimer.Update(time.Since(start))
 }
 
 func (gm *GoMetrics) IncReadinessRequestTimer(start time.Time) {
-	end := time.Now().UTC()
-	duration := end.Sub(start)
-	gm.TrackedMetrics.ReadinessRequestTimer.Update(duration)
+	gm.TrackedMetrics.ReadinessRequestTimer.Update(time.Since(start))
 }
 
 func (gm *GoMetrics) IncDBGetTimer(start time.Time) {
-	end := time.Now().UTC()
-	duration := end.Sub(start)
-	gm.TrackedMetrics.DBGetTimer.Update(duration)
+	gm.TrackedMetrics.DBGetTimer.Update(time.Since(start))
 }
 
 func (gm *GoMetrics) IncDBPutTimer(start time.Time) {
-	end := time.Now().UTC()
-	duration := end.Sub(start)
-	gm.TrackedMetrics.DBPutTimer.Update(duration)
+	gm.TrackedMetrics.DBPutTimer.Update(time.Since(start))
 }
 
 func (gm *GoMetrics) IncHTTPStatusCounters(ctx context.Context, httpStatusCode int) {

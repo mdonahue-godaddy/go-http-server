@@ -247,6 +247,7 @@ type tag string
 const (
 	ApplicationTag tag = "application"
 	AsherahTag     tag = "asherah"
+	MetricsTag     tag = "metrics"
 	RequestTag     tag = "request"
 	SecurityTag    tag = "security"
 )
@@ -368,6 +369,28 @@ func (w *wrappedEvent) ECSTimedEvent(category eventCategory, outcome eventOutcom
 	if duration > 0 {
 		detail = detail.Int64("duration", duration.Nanoseconds())
 	}
+
+	return w.Dict("event", detail)
+}
+
+// ECSMetric adds ECS "event" field with a duration to the wrapped *zerolog.Event context.
+func (w *wrappedEvent) ECSMetric(types ...eventType) *wrappedEvent {
+	var strs []string
+
+	switch len(types) {
+	case 0:
+		strs = []string{string(InformationType)}
+	default:
+		strs = make([]string, len(types))
+		for i := range types {
+			strs[i] = string(types[i])
+		}
+	}
+
+	detail := zerolog.Dict().
+		Str("kind", "metric").
+		Strs("category", []string{string(Database), string(Process), string(Web)}).
+		Strs("type", strs)
 
 	return w.Dict("event", detail)
 }

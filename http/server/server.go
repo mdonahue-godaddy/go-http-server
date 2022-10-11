@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mdonahue-godaddy/go-http-server/config"
@@ -48,7 +49,7 @@ func NewServer(serviceName string, cfg *config.Settings, template *string) *Serv
 		server.responseTemplateFile = DefaultResponseTemplateFile
 	}
 
-	server.metrics = gometrics.NewGoMetrics()
+	server.metrics = gometrics.NewGoMetrics(metrics.DefaultRegistry, "go-http-server")
 
 	return &server
 }
@@ -126,7 +127,7 @@ func (s *Server) WriteHeader(ctx context.Context, responseWriter http.ResponseWr
 	method := "server.writeHeader"
 	log.WithFields(shared.GetFields(ctx, shared.EventTypeInfo, false)).Debugf("%s writing response header with HTTP Status Code: %d", method, httpStatusCode)
 
-	s.metrics.IncHTTPStatusCounters(ctx, httpStatusCode)
+	//s.metrics.IncHTTPService(log, httpStatusCode, time.Duration(1*time.Second))
 
 	responseWriter.WriteHeader(httpStatusCode)
 }
@@ -171,7 +172,7 @@ func (s *Server) LivenessRequestProcessor(responseWriter http.ResponseWriter, re
 
 	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
 
-	s.metrics.IncLivenessRequestTimer(start)
+	s.metrics.IncHealthRequest(time.Since(start))
 }
 
 // readinessRequestProcessor - readiness processor
@@ -191,7 +192,7 @@ func (s *Server) ReadinessRequestProcessor(responseWriter http.ResponseWriter, r
 
 	s.WriteHealthCheckResponse(ctx, responseWriter, responseStatus, responseMessage)
 
-	s.metrics.IncReadinessRequestTimer(start)
+	s.metrics.IncHealthRequest(time.Since(start))
 }
 
 func (s *Server) WriteHealthCheckResponse(ctx context.Context, responseWriter http.ResponseWriter, httpStatusCode int, message string) {
@@ -224,7 +225,7 @@ func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *h
 
 	if request.Method == "HEAD" { // head request responses shouldn't return a body
 		s.DoHeadErrorResponse(ctx, responseWriter, request, http.StatusBadRequest, "Verb: HEAD - not supported")
-		s.metrics.IncServiceRequestTimer(start)
+		s.metrics.IncServiceRequest(time.Since(start))
 		return
 	}
 
@@ -233,7 +234,7 @@ func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *h
 	if err != nil {
 		httpStatusCode, httpStatusMessage, htmlMessage := s.CreateResponseDetails(http.StatusBadRequest, err.Error())
 		s.DoErrorResponse(ctx, responseWriter, request, httpStatusCode, htmlMessage, errors.New(httpStatusMessage))
-		s.metrics.IncServiceRequestTimer(start)
+		s.metrics.IncServiceRequest(time.Since(start))
 		return
 	}
 
@@ -241,7 +242,7 @@ func (s *Server) RequestProcessor(responseWriter http.ResponseWriter, request *h
 
 	s.DoValidRequestResponse(ctx, responseWriter, request, htmlMessage)
 
-	s.metrics.IncServiceRequestTimer(start)
+	s.metrics.IncServiceRequest(time.Since(start))
 }
 
 // Init - setup server
